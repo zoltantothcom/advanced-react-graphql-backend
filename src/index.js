@@ -22,6 +22,20 @@ server.express.use((req, res, next) => {
   next();
 });
 
+// middleware that populates the user on each query
+server.express.use(async (req, res, next) => {
+  if (!req.userId) return next();
+
+  const user = await db.query.user(
+    { where: { id: req.userId } },
+    '{id, name, email, permissions}',
+  );
+
+  req.user = user;
+
+  next();
+});
+
 server.start(
   {
     cors: {
