@@ -229,7 +229,7 @@ const Mutations = {
     const { userId } = ctx.request;
 
     if (!userId) {
-      throw new Error('You might be signed in!');
+      throw new Error('You need to be signed in!');
     }
     // query the users current cart
     const [existingCartItem] = await ctx.db.query.cartItems({
@@ -240,7 +240,6 @@ const Mutations = {
     });
     // check if the item already in the cart and increment by 1 if it is
     if (existingCartItem) {
-      console.log('already in cart');
       return ctx.db.mutation.updateCartItem(
         {
           where: { id: existingCartItem.id },
@@ -259,6 +258,35 @@ const Mutations = {
           item: {
             connect: { id: args.id },
           },
+        },
+      },
+      info,
+    );
+  },
+
+  async removeFromCart(parent, args, ctx, info) {
+    // find the cart item
+    const cartItem = await ctx.db.query.cartItem(
+      {
+        where: {
+          id: args.id,
+        },
+      },
+      `{id user { id }}`,
+    );
+
+    if (!cartItem) {
+      throw new Error('No item found!');
+    }
+    // make sure they own the cart item
+    if (cartItem.user.id !== ctx.request.userId) {
+      throw new Error("You don't have permissions to delete this item!");
+    }
+    // delete the cart item
+    return ctx.db.mutation.deleteCartItem(
+      {
+        where: {
+          id: args.id,
         },
       },
       info,
