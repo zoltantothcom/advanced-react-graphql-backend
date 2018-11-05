@@ -29,6 +29,32 @@ const Query = {
     const users = await ctx.db.query.users({}, info);
     return users;
   },
+  async order(parent, args, ctx, info) {
+    // check if user logged in
+    if (!ctx.request.userId) {
+      throw new Error('You must be logged in!');
+    }
+    // query the current order
+    const order = await ctx.db.query.order(
+      {
+        where: {
+          id: args.id,
+        },
+      },
+      info,
+    );
+    // check if permissions to see this order
+    const ownsOrder = order.user.id === ctx.request.userId;
+    const hasPermissionsToSeeOrder = ctx.request.user.permissions.includes(
+      'ADMIN',
+    );
+
+    if (!ownsOrder || !hasPermissionsToSeeOrder) {
+      throw new Error('Nothing to see here! Move on!');
+    }
+
+    return order;
+  },
   // async items(parent, args, ctx, info) {
   //   const items = await ctx.db.query.items();
   //   return items;
